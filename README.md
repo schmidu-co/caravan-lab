@@ -1,7 +1,19 @@
 # caravan-lab
 
-Ops/infrastructure repo for the **Caravan Telemetry** project.  
-App code, Python workers, and Dockerfiles live in the companion repo **[caravan](https://github.com/schmidu/caravan)**.
+**Ops / infrastructure repo** for the Caravan Telemetry project.
+
+## Two-repo architecture
+
+| Repo | What lives here | Who touches it |
+|------|-----------------|----------------|
+| **[caravan](https://github.com/schmidu-co/caravan)** | Next.js app, Python workers, Dockerfiles, GitHub Actions CI | Developers — write code, push images to GHCR |
+| **[caravan-lab](https://github.com/schmidu-co/caravan-lab)** ← you are here | Docker Compose stacks, deploy scripts, Mosquitto config, `.env.example` | Ops — runs on the Raspberry Pi 5 in the caravan |
+
+> **"lab" = home lab, not test environment.**  
+> There is only one running environment: the Pi in the caravan. `caravan-lab` is the deployment/ops repo for that system, not a staging or test environment.
+
+Images are built in `caravan` by GitHub Actions and pushed to GHCR (`ghcr.io/schmidu-co/*`).  
+`caravan-lab` pulls those images and runs them — no code is built here.
 
 ## What this is
 
@@ -76,7 +88,7 @@ In Imager Advanced Options: enable SSH, set hostname to `caravan`, configure Wi-
 
 ```bash
 ssh pi@caravan.local
-curl -sSL https://raw.githubusercontent.com/schmidu/caravan-lab/main/scripts/setup.sh | bash
+curl -sSL https://raw.githubusercontent.com/schmidu-co/caravan-lab/main/scripts/setup.sh | bash
 ```
 
 The setup script:
