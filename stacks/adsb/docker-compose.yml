@@ -1,0 +1,50 @@
+# ADS-B receiver: readsb (wiedehopf's fork) + tar1090 + mlat, all-in-one.
+# Image: sdr-enthusiasts/docker-adsb-ultrafeeder — built on wiedehopf/readsb + wiedehopf/tar1090.
+# Docs: https://github.com/sdr-enthusiasts/docker-adsb-ultrafeeder
+#       https://github.com/wiedehopf/readsb  /  https://github.com/wiedehopf/tar1090
+#
+# LIVE CARAVAN POSITION IN TAR1090:
+#   READSB_GPSD_HOST connects readsb to the gpsd-bridge container.
+#   readsb reads the live GPS fix from gpsd and updates its own receiver position
+#   continuously — the blue dot and range rings in tar1090 follow the caravan as it moves.
+#   gpsd stack must be started before this stack.
+services:
+  ultrafeeder:
+    image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder:latest
+    container_name: adsb-ultrafeeder
+    restart: unless-stopped
+    device_cgroup_rules:
+      - "c 189:* rwm"   # USB device access for RTL-SDR
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+      - adsb_globe_history:/var/globe_history
+      - adsb_graphs:/var/lib/collectd
+    environment:
+      TZ: ${FEEDER_TZ:-Europe/Zurich}
+      # Static fallback position — overridden at runtime by gpsd when GPS has a fix
+      FEEDER_LAT: ${FEEDER_LAT}
+      FEEDER_LONG: ${FEEDER_LON}
+      FEEDER_ALT_M: ${FEEDER_ALT_M}
+      ADSB_SDR_SERIAL: ${ADSB_SDR_SERIAL:-1090}
+      READSB_DEVICE_TYPE: rtlsdr
+      READSB_NET_ENABLE: "true"
+      # Live position from gpsd-bridge — makes the caravan position dynamic in tar1090
+      READSB_GPSD_HOST: caravan-gpsd-bridge
+      READSB_GPSD_PORT: "2947"
+      # Map initial center (static; displayed before first GPS fix)
+      TAR1090_DEFAULTCENTERLAT: ${FEEDER_LAT}
+      TAR1090_DEFAULTCENTERLON: ${FEEDER_LON}
+    ports:
+      - "8080:80"       # tar1090 aircraft map
+      - "30003:30003"   # SBS/BaseStation output
+      - "30005:30005"   # Beast binary output
+    networks:
+      - caravan
+
+volumes:
+  adsb_globe_history:
+  adsb_graphs:
+
+networks:
+  caravan:
+    external: true

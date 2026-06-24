@@ -1,0 +1,28 @@
+# PHASE 2 — not active yet.
+# Pi Camera Module 3 MJPEG stream via picamera2.
+# Pi 5 has no hardware MJPEG encoder; JpegEncoder runs on the CPU.
+services:
+  camera:
+    image: ghcr.io/schmidu/caravan-camera:latest
+    container_name: caravan-camera
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/video0:/dev/video0
+    volumes:
+      - /dev/media0:/dev/media0
+      - /dev/media1:/dev/media1
+    environment:
+      STREAM_PORT: "8888"
+      JPEG_QUALITY: "75"
+      FRAME_WIDTH: "1920"
+      FRAME_HEIGHT: "1080"
+      FPS: "15"
+    ports:
+      - "8888:8888"   # MJPEG stream at http://caravan.local:8888/stream
+    networks:
+      - caravan
+
+networks:
+  caravan:
+    external: true

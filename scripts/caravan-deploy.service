@@ -1,0 +1,11 @@
+[Unit]
+Description=Caravan Smart Deploy
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/caravan-lab/scripts/deploy.sh
+User=root
+StandardOutput=journal
+StandardError=journal

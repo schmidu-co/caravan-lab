@@ -1,0 +1,26 @@
+# Sensor worker: reads BME280 (I2C 0x76) and MQ2 (Grove HAT ADC 0x04, channel 0).
+# The container image is built from workers/sensors/ in the caravan repo.
+# privileged: true is required for I2C device access inside the container.
+services:
+  sensors:
+    image: ghcr.io/schmidu/caravan-sensors:latest
+    container_name: caravan-sensors
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/i2c-1:/dev/i2c-1
+    environment:
+      I2C_BUS: "1"
+      BME280_ADDRESS: "0x76"
+      GROVE_ADC_ADDRESS: "0x04"
+      MQ2_ADC_CHANNEL: "0"
+      MQ2_ALARM_THRESHOLD: "2000"   # raw ADC units; tune after installation
+      MQTT_HOST: ${MQTT_HOST:-mqtt}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      PUBLISH_INTERVAL_S: "30"
+    networks:
+      - caravan
+
+networks:
+  caravan:
+    external: true

@@ -1,0 +1,17 @@
+# Cloudflare Tunnel — routes public HTTPS traffic to caravan-web:3000.
+# Configure the ingress rule in the Cloudflare Zero Trust dashboard:
+#   Public hostname → https://caravan.yourdomain.com → http://caravan-web:3000
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    networks:
+      - caravan
+
+networks:
+  caravan:
+    external: true

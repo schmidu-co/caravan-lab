@@ -1,0 +1,11 @@
+[Unit]
+Description=Caravan Smart Deploy — every 15 minutes
+Requires=caravan-deploy.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+Unit=caravan-deploy.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,30 @@
+# GPS bridge: reads USB G-Mouse on /dev/ttyUSB0, runs gpsd on :2947, publishes to MQTT.
+# The container image is built from workers/gpsd-bridge/ in the caravan repo.
+# It serves two consumers:
+#   1. ultrafeeder connects to gpsd:2947 → tar1090 shows the live caravan position
+#   2. Python bridge subscribes gpsd → publishes caravan/gps/position to MQTT
+# privileged: true is required for USB serial device access inside the container.
+services:
+  gpsd-bridge:
+    image: ghcr.io/schmidu/caravan-gpsd-bridge:latest
+    container_name: caravan-gpsd-bridge
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - ${GPS_DEVICE:-/dev/ttyUSB0}:${GPS_DEVICE:-/dev/ttyUSB0}
+    ports:
+      - "2947:2947"     # gpsd protocol — consumed by ultrafeeder for live receiver position
+    environment:
+      GPS_DEVICE: ${GPS_DEVICE:-/dev/ttyUSB0}
+      GPS_BAUD: "9600"
+      GPSD_PORT: "2947"
+      MQTT_HOST: ${MQTT_HOST:-mqtt}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_TOPIC: caravan/gps/position
+      PUBLISH_INTERVAL_S: "5"
+    networks:
+      - caravan
+
+networks:
+  caravan:
+    external: true
