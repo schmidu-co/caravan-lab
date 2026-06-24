@@ -3,7 +3,7 @@
 # privileged: true is required for I2C device access inside the container.
 services:
   sensors:
-    image: ghcr.io/schmidu/caravan-sensors:latest
+    image: ghcr.io/schmidu-co/caravan-sensors:latest
     container_name: caravan-sensors
     restart: unless-stopped
     privileged: true

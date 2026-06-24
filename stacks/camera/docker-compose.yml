@@ -3,7 +3,7 @@
 # Pi 5 has no hardware MJPEG encoder; JpegEncoder runs on the CPU.
 services:
   camera:
-    image: ghcr.io/schmidu/caravan-camera:latest
+    image: ghcr.io/schmidu-co/caravan-camera:latest
     container_name: caravan-camera
     restart: unless-stopped
     privileged: true

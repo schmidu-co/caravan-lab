@@ -6,7 +6,7 @@
 # privileged: true is required for USB serial device access inside the container.
 services:
   gpsd-bridge:
-    image: ghcr.io/schmidu/caravan-gpsd-bridge:latest
+    image: ghcr.io/schmidu-co/caravan-gpsd-bridge:latest
     container_name: caravan-gpsd-bridge
     restart: unless-stopped
     privileged: true

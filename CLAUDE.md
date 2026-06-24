@@ -13,10 +13,10 @@ The `caravan` repo builds and publishes these images to GHCR:
 
 | Image | Source |
 |-------|--------|
-| `ghcr.io/schmidu/caravan-web:latest` | Next.js 15, App Router, Prisma, NextAuth v5, Tailwind v4 |
-| `ghcr.io/schmidu/caravan-gpsd-bridge:latest` | Python — runs gpsd on :2947, reads USB G-Mouse, publishes MQTT |
-| `ghcr.io/schmidu/caravan-sensors:latest` | Python — reads BME280 + MQ2 via Grove HAT, publishes MQTT |
-| `ghcr.io/schmidu/caravan-camera:latest` | Python — picamera2 MJPEG stream *(Phase 2)* |
+| `ghcr.io/schmidu-co/caravan-web:latest` | Next.js 15, App Router, Prisma, NextAuth v5, Tailwind v4 |
+| `ghcr.io/schmidu-co/caravan-gpsd-bridge:latest` | Python — runs gpsd on :2947, reads USB G-Mouse, publishes MQTT |
+| `ghcr.io/schmidu-co/caravan-sensors:latest` | Python — reads BME280 + MQ2 via Grove HAT, publishes MQTT |
+| `ghcr.io/schmidu-co/caravan-camera:latest` | Python — picamera2 MJPEG stream *(Phase 2)* |
 
 ## Architecture decisions
 
