@@ -100,7 +100,7 @@ Choose OS
 |-------------|------|
 | Hostname | `caravan` |
 | SSH aktivieren | ✓ (Passwort-Authentifizierung) |
-| Benutzername | `pi` (oder eigener Name) |
+| Benutzername | `idefix` |
 | Passwort | sicheres Passwort setzen |
 | WLAN | nur wenn kein LAN-Kabel beim ersten Boot |
 | Locale | Zeitzone + Tastaturlayout nach Bedarf |
@@ -130,7 +130,7 @@ Wenn nicht → neuen Schlüssel generieren:
 
 **macOS / Linux:**
 ```bash
-ssh-keygen -t ed25519 -C "caravan-pi"
+ssh-keygen -t ed25519 -C "caravan-idefix"
 # Speicherort: Enter (Standard ~/.ssh/id_ed25519 übernehmen)
 # Passphrase: optional — leer lassen für passwortlosen Zugriff,
 #             oder eine Passphrase setzen für zusätzlichen Schutz
@@ -138,7 +138,7 @@ ssh-keygen -t ed25519 -C "caravan-pi"
 
 **Windows** (PowerShell oder Windows Terminal):
 ```powershell
-ssh-keygen -t ed25519 -C "caravan-pi"
+ssh-keygen -t ed25519 -C "caravan-idefix"
 # Speicherort: Enter (Standard C:\Users\<Name>\.ssh\id_ed25519 übernehmen)
 # Passphrase: wie oben
 ```
@@ -153,7 +153,7 @@ Der Pi muss eingeschaltet und im gleichen Netzwerk sein. Passwort-Login muss noc
 
 **macOS / Linux:**
 ```bash
-ssh-copy-id -i ~/.ssh/id_ed25519.pub pi@caravan.local
+ssh-copy-id -i ~/.ssh/id_ed25519.pub idefix@caravan.local
 # Passwort des Pi-Users eingeben (einmalig)
 ```
 
@@ -163,7 +163,7 @@ ssh-copy-id -i ~/.ssh/id_ed25519.pub pi@caravan.local
 Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub"
 
 # Dann auf dem Pi einloggen (noch mit Passwort):
-ssh pi@caravan.local
+ssh idefix@caravan.local
 
 # Auf dem Pi: Schlüssel eintragen
 mkdir -p ~/.ssh
@@ -176,12 +176,12 @@ exit
 #### Schritt 3 — Schlüssel-Login testen
 
 ```bash
-ssh pi@caravan.local
+ssh idefix@caravan.local
 # Muss ohne Passwort funktionieren
 ```
 
 Wenn der Login klappt: ✓ weiter zu Schritt 4.  
-Wenn nicht: Schlüssel prüfen mit `ssh -v pi@caravan.local` (verbose, zeigt was schiefläuft).
+Wenn nicht: Schlüssel prüfen mit `ssh -v idefix@caravan.local` (verbose, zeigt was schiefläuft).
 
 #### Schritt 4 — Passwort-Login deaktivieren
 
@@ -195,13 +195,13 @@ sudo systemctl restart sshd
 
 Verifizieren — neues Terminal öffnen und testen:
 ```bash
-ssh pi@caravan.local   # muss weiterhin funktionieren (per Schlüssel)
-ssh -o PasswordAuthentication=no pi@caravan.local  # sollte klappen
+ssh idefix@caravan.local   # muss weiterhin funktionieren (per Schlüssel)
+ssh -o PasswordAuthentication=no idefix@caravan.local  # sollte klappen
 ```
 
 Versuch mit Passwort — muss jetzt abgelehnt werden:
 ```bash
-ssh -o PubkeyAuthentication=no pi@caravan.local
+ssh -o PubkeyAuthentication=no idefix@caravan.local
 # Erwartet: "Permission denied (publickey)"
 ```
 
@@ -209,9 +209,9 @@ ssh -o PubkeyAuthentication=no pi@caravan.local
 
 Sobald Tailscale eingerichtet ist, lautet der SSH-Befehl von überall:
 ```bash
-ssh pi@caravan          # Tailscale-Hostname (gesetzt in Imager: "caravan")
+ssh idefix@caravan          # Tailscale-Hostname (gesetzt in Imager: "caravan")
 # oder
-ssh pi@<tailscale-ip>   # IP aus dem Tailscale-Dashboard
+ssh idefix@<tailscale-ip>   # IP aus dem Tailscale-Dashboard
 ```
 
 Auf einem neuen Gerät Zugriff hinzufügen:
@@ -223,7 +223,7 @@ echo "OEFFENTLICHER_SCHLUESSEL_NEUES_GERAET" >> ~/.ssh/authorized_keys
 ### 3. First boot — run setup script
 
 ```bash
-ssh pi@caravan.local
+ssh idefix@caravan.local
 curl -sSL https://raw.githubusercontent.com/schmidu-co/caravan-lab/main/scripts/setup.sh | bash
 ```
 
@@ -231,7 +231,7 @@ Das Setup-Script erledigt:
 - I2C und SPI aktivieren (`raspi-config`)
 - DVB-Kernel-Module blacklisten (für RTL-SDR)
 - Docker installieren (get.docker.com)
-- `pi`-User zu Gruppen hinzufügen: `docker`, `i2c`, `dialout`, `gpio`
+- `idefix`-User zu Gruppen hinzufügen: `docker`, `i2c`, `dialout`, `gpio`
 - Tailscale installieren
 - **UFW Firewall** einrichten (erlaubt nur SSH + Tailscale)
 - Docker-Netzwerk `caravan` erstellen
@@ -372,7 +372,7 @@ docker compose -f stacks/cloudflared/docker-compose.yml --env-file .env up -d
 |------------|---------------|-----|
 | Web-Dashboard | `https://caravan.c-knox.ch` | Alle (Login + 2FA erforderlich) |
 | Admin-Panel | `https://caravan.c-knox.ch/admin` | ADMIN-Benutzer (Zahnrad-Icon) |
-| SSH | `ssh pi@caravan` (via Tailscale) | Techniker mit SSH-Schlüssel |
+| SSH | `ssh idefix@caravan` (via Tailscale) | Techniker mit SSH-Schlüssel |
 | tar1090 ADS-B | `http://<tailscale-ip>:8080` | Intern / Tailscale |
 
 ---
@@ -403,7 +403,7 @@ Nur per Schlüssel (`PasswordAuthentication no` in `/etc/ssh/sshd_config`).
 
 ```bash
 # Schlüssel auf neuem Gerät hinzufügen:
-ssh-copy-id -i ~/.ssh/id_ed25519.pub pi@<tailscale-ip>
+ssh-copy-id -i ~/.ssh/id_ed25519.pub idefix@<tailscale-ip>
 ```
 
 ### 2-Faktor-Authentifizierung (TOTP)

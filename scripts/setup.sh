@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # First-time setup for the Caravan Pi 5.
-# Run as the pi user: curl -sSL .../setup.sh | bash
+# Run as the idefix user: curl -sSL .../setup.sh | bash
 set -euo pipefail
 
 REPO_URL="https://github.com/schmidu-co/caravan-lab.git"
@@ -30,8 +30,8 @@ else
   echo "Docker already installed, skipping"
 fi
 
-echo "=== [5/9] Add pi to groups ==="
-CURRENT_USER="${SUDO_USER:-${USER:-pi}}"
+echo "=== [5/9] Add idefix to groups ==="
+CURRENT_USER="${SUDO_USER:-${USER:-idefix}}"
 for grp in docker i2c dialout gpio; do
   sudo usermod -aG "$grp" "$CURRENT_USER" 2>/dev/null || true
 done
@@ -76,7 +76,7 @@ echo " Setup complete."
 echo ""
 echo " IMPORTANT — SSH key setup (do this now, before closing session):"
 echo "   On your local machine:"
-echo "     ssh-keygen -t ed25519 -C 'caravan-pi'"
+echo "     ssh-keygen -t ed25519 -C 'caravan-idefix'"
 echo "     ssh-copy-id -i ~/.ssh/id_ed25519.pub ${CURRENT_USER}@caravan.local"
 echo "   Then disable password login on the Pi:"
 echo "     sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config"
