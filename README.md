@@ -250,8 +250,11 @@ Das Setup-Script erledigt:
 
 Nach dem Script: **ausloggen und neu einloggen** (Gruppenmitgliedschaften), dann Tailscale verbinden:
 
+Auth-Key generieren: **[login.tailscale.com](https://login.tailscale.com) → Settings → Keys → Generate auth key** (preauthorized: ja)
+
 ```bash
-sudo tailscale up --authkey <TS_AUTHKEY>
+# tskey-auth-... durch deinen echten Key ersetzen:
+sudo tailscale up --authkey tskey-auth-xxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ### 4. Configure environment
