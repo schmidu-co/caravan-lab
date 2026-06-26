@@ -22,7 +22,7 @@ services:
     container_name: caravan-web
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"  # cloudflared accesses via Docker network; 127.0.0.1 for local debug
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-caravan}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-caravan}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}

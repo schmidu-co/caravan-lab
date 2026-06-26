@@ -35,9 +35,9 @@ services:
       TAR1090_DEFAULTCENTERLAT: ${FEEDER_LAT}
       TAR1090_DEFAULTCENTERLON: ${FEEDER_LON}
     ports:
-      - "8080:80"       # tar1090 aircraft map
-      - "30003:30003"   # SBS/BaseStation output
-      - "30005:30005"   # Beast binary output
+      - "127.0.0.1:8080:80"       # tar1090 map — reachable on local network via Tailscale IP
+      - "127.0.0.1:30003:30003"   # SBS/BaseStation output
+      - "127.0.0.1:30005:30005"   # Beast binary output
     networks:
       - caravan
 

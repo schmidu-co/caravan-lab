@@ -107,30 +107,56 @@ Choose OS
 
 SD-Karte / NVMe flashen, in den Pi einlegen, booten.
 
-### 2. First boot — run setup script
+### 2. SSH-Schlüssel vorbereiten (vor dem ersten Login)
+
+Zugriff per Schlüssel statt Passwort — einmalig auf deinem lokalen Rechner:
+
+```bash
+# Schlüsselpaar generieren (falls noch keins vorhanden)
+ssh-keygen -t ed25519 -C "caravan-pi"
+
+# Öffentlichen Schlüssel auf den Pi kopieren
+ssh-copy-id -i ~/.ssh/id_ed25519.pub pi@caravan.local
+```
+
+Nach dem Kopieren testen:
+```bash
+ssh pi@caravan.local   # muss ohne Passwort funktionieren
+```
+
+Dann Passwort-Login deaktivieren:
+```bash
+sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo systemctl restart sshd
+```
+
+> **Wichtig:** Erst sicherstellen dass der Schlüssel-Login klappt, dann erst Passwort deaktivieren — sonst sperrt man sich aus.
+
+### 3. First boot — run setup script
 
 ```bash
 ssh pi@caravan.local
 curl -sSL https://raw.githubusercontent.com/schmidu-co/caravan-lab/main/scripts/setup.sh | bash
 ```
 
-The setup script:
-- Enables I2C and SPI via `raspi-config`
-- Blacklists DVB kernel modules so RTL-SDR works
-- Installs Docker (via get.docker.com)
-- Adds the `pi` user to the `docker`, `i2c`, `dialout`, and `gpio` groups
-- Installs Tailscale
-- Creates the shared Docker network `caravan`
-- Clones this repo to `/opt/caravan-lab`
-- Installs and enables the systemd deploy timer
+Das Setup-Script erledigt:
+- I2C und SPI aktivieren (`raspi-config`)
+- DVB-Kernel-Module blacklisten (für RTL-SDR)
+- Docker installieren (get.docker.com)
+- `pi`-User zu Gruppen hinzufügen: `docker`, `i2c`, `dialout`, `gpio`
+- Tailscale installieren
+- **UFW Firewall** einrichten (erlaubt nur SSH + Tailscale)
+- Docker-Netzwerk `caravan` erstellen
+- Repo nach `/opt/caravan-lab` klonen
+- systemd Deploy-Timer installieren und aktivieren
 
-After the script finishes, **log out and back in** for group memberships to take effect, then authenticate Tailscale:
+Nach dem Script: **ausloggen und neu einloggen** (Gruppenmitgliedschaften), dann Tailscale verbinden:
 
 ```bash
 sudo tailscale up --authkey <TS_AUTHKEY>
 ```
 
-### 3. Configure environment
+### 4. Configure environment
 
 ```bash
 cd /opt/caravan-lab
@@ -142,7 +168,7 @@ Required variables: `TAILSCALE_AUTHKEY`, `TUNNEL_TOKEN`, `POSTGRES_PASSWORD`, `N
 
 `GPS_DEVICE` defaults to `/dev/ttyUSB0`. If the G-Mouse appears as `/dev/ttyACM0`, set it here.
 
-### 4. Start stacks (in order)
+### 5. Start stacks (in order)
 
 ```bash
 cd /opt/caravan-lab
@@ -166,19 +192,173 @@ docker compose -f stacks/sensors/docker-compose.yml   --env-file .env up -d
 docker compose -f stacks/cloudflared/docker-compose.yml --env-file .env up -d
 ```
 
-### 5. Verify
+### 6. Verify
 
 | URL | What you see |
 |-----|-------------|
-| `http://caravan.local:3000` | Caravan web UI (local network) |
-| `http://caravan.local:8080` | tar1090 ADS-B map |
-| `https://your.domain.com` | Caravan web UI via Cloudflare Tunnel |
+| `http://caravan.local:3000` | Caravan web UI (Tailscale / lokales Netz) |
+| `http://caravan.local:8080` | tar1090 ADS-B map (Tailscale / lokales Netz) |
+| `https://caravan.c-knox.ch` | Caravan web UI via Cloudflare Tunnel (öffentlich) |
 
 Check live MQTT traffic:
 
 ```bash
 docker exec -it mqtt mosquitto_sub -t 'caravan/#' -v
 ```
+
+## Domain caravan.c-knox.ch — Setup-Anleitung
+
+### Voraussetzungen
+
+- Domain `c-knox.ch` muss bei einem Registrar registriert sein
+- Cloudflare-Account (kostenlos reicht)
+
+### Schritt 1 — Domain zu Cloudflare übertragen
+
+1. Einloggen auf [dash.cloudflare.com](https://dash.cloudflare.com) → **Add a Site** → `c-knox.ch` eingeben
+2. Free-Plan wählen → Cloudflare scannt bestehende DNS-Einträge
+3. Cloudflare zeigt zwei **Nameserver** an (z. B. `ada.ns.cloudflare.com`, `bob.ns.cloudflare.com`)
+4. Beim Registrar der Domain (`c-knox.ch`) die Nameserver ersetzen → auf die Cloudflare-NS setzen
+5. Warten bis die NS-Änderung aktiv ist (5 min–48 h, meist < 1 h) — Cloudflare zeigt grünen Status
+
+> Falls nur die Subdomain `caravan.c-knox.ch` gewünscht ist ohne die ganze Domain zu Cloudflare zu übertragen:  
+> Beim bisherigen DNS-Provider einen `CNAME`-Eintrag erstellen (Schritt 3 unten, manuell).
+
+### Schritt 2 — Cloudflare Tunnel erstellen
+
+1. Im Cloudflare Dashboard: **Zero Trust** (linke Sidebar) → **Networks** → **Tunnels** → **Create a tunnel**
+2. Tunnel-Typ: **Cloudflared** → **Next**
+3. Name: `caravan` → **Save tunnel**
+4. Connector installieren: **Docker** wählen — Cloudflare zeigt den Befehl mit dem Token an
+5. Den Token kopieren → in `/opt/caravan-lab/.env` eintragen: `TUNNEL_TOKEN=<token>`
+
+### Schritt 3 — Public Hostname konfigurieren
+
+Im Tunnel → Tab **Public Hostnames** → **Add a public hostname**:
+
+| Feld | Wert |
+|------|------|
+| Subdomain | `caravan` |
+| Domain | `c-knox.ch` |
+| Type | `HTTP` |
+| URL | `caravan-web:3000` |
+
+→ **Save hostname**
+
+Cloudflare erstellt automatisch den DNS-Eintrag:
+```
+caravan.c-knox.ch  CNAME  <tunnel-id>.cfargotunnel.com
+```
+
+### Schritt 4 — Cloudflare Access (optional, zusätzliche Schutzschicht)
+
+Zero Trust → **Access** → **Applications** → **Add an application** → **Self-hosted**:
+- Application name: `Caravan`
+- Application domain: `caravan.c-knox.ch`
+- Policy: E-Mail-Adresse oder IP-Range einschränken
+
+Dies fügt vor der Next.js-App eine zusätzliche Cloudflare-Authentifizierung ein.
+
+### Schritt 5 — .env aktualisieren
+
+```bash
+nano /opt/caravan-lab/.env
+```
+
+```
+NEXTAUTH_URL=https://caravan.c-knox.ch
+TUNNEL_TOKEN=<tunnel-token-von-schritt-2>
+```
+
+Dann caravan- und cloudflared-Stack neu starten:
+
+```bash
+cd /opt/caravan-lab
+docker compose -f stacks/caravan/docker-compose.yml    --env-file .env up -d
+docker compose -f stacks/cloudflared/docker-compose.yml --env-file .env up -d
+```
+
+### Ergebnis
+
+| Zugangsweg | URL / Methode | Wer |
+|------------|---------------|-----|
+| Web-Dashboard | `https://caravan.c-knox.ch` | Alle (Login + 2FA erforderlich) |
+| Admin-Panel | `https://caravan.c-knox.ch/admin` | ADMIN-Benutzer (Zahnrad-Icon) |
+| SSH | `ssh pi@caravan` (via Tailscale) | Techniker mit SSH-Schlüssel |
+| tar1090 ADS-B | `http://<tailscale-ip>:8080` | Intern / Tailscale |
+
+---
+
+## Sicherheit
+
+### Firewall (UFW)
+
+```
+Eingehend:  SSH (22/tcp) + Tailscale (41641/udp) — alles andere blockiert
+Ausgehend:  alles erlaubt
+Docker:     alle Container-Ports auf 127.0.0.1 gebunden (Docker umgeht UFW sonst)
+```
+
+Firewall-Status prüfen:
+```bash
+sudo ufw status verbose
+```
+
+Firewall neu einrichten (falls nötig):
+```bash
+bash /opt/caravan-lab/scripts/firewall.sh
+```
+
+### SSH-Zugang
+
+Nur per Schlüssel (`PasswordAuthentication no` in `/etc/ssh/sshd_config`).
+
+```bash
+# Schlüssel auf neuem Gerät hinzufügen:
+ssh-copy-id -i ~/.ssh/id_ed25519.pub pi@<tailscale-ip>
+```
+
+### 2-Faktor-Authentifizierung (TOTP)
+
+Jeder Benutzer kann 2FA in den Einstellungen aktivieren:
+
+1. Einloggen → **Dashboard** → Avatar / Profil → **2FA einrichten**
+2. QR-Code mit **Google Authenticator**, **Authy** oder anderer TOTP-App scannen
+3. 6-stelligen Code bestätigen → 2FA ist aktiv
+
+Bei verlorener App: Admin kann 2FA im Admin-Panel zurücksetzen (**Zahnrad-Icon** → Benutzer → `2FA reset`).
+
+### Admin-Panel
+
+Erreichbar über das **Zahnrad-Icon** oben rechts (nur für ADMIN-Benutzer sichtbar):
+
+| Tab | Inhalt |
+|-----|--------|
+| **Benutzer** | Liste aller Benutzer, Rollen ändern (USER/ADMIN), 2FA zurücksetzen, Benutzer löschen |
+| **Konfiguration** | Site-Name, Alarm-Schwellen, Session-Dauer |
+| **Sicherheit** | Hinweise zu SSH, Firewall, 2FA |
+
+### Erster Admin-Benutzer
+
+Nach der ersten DB-Migration einen Admin-Benutzer erstellen:
+
+```bash
+docker exec -it caravan-web node -e "
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
+const prisma = new PrismaClient();
+bcrypt.hash('DEIN_PASSWORT', 12).then(h =>
+  prisma.user.create({ data: {
+    email: 'admin@c-knox.ch',
+    password: h,
+    role: 'ADMIN',
+    name: 'Admin'
+  }})
+).then(u => { console.log('Created:', u.email); process.exit(0); });
+"
+```
+
+---
 
 ## Live caravan position in the ADS-B map
 
