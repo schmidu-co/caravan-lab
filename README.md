@@ -320,23 +320,46 @@ ssh-copy-id -i ~/.ssh/id_ed25519.pub pi@<tailscale-ip>
 
 ### 2-Faktor-Authentifizierung (TOTP)
 
-Jeder Benutzer kann 2FA in den Einstellungen aktivieren:
+**Login-Ablauf mit 2FA:**
+1. E-Mail + Passwort eingeben → wird geprüft
+2. Bei aktivierter 2FA: automatische Weiterleitung zur TOTP-Seite
+3. 6-stelligen Code aus **Google Authenticator** oder **Authy** eingeben → angemeldet
 
-1. Einloggen → **Dashboard** → Avatar / Profil → **2FA einrichten**
-2. QR-Code mit **Google Authenticator**, **Authy** oder anderer TOTP-App scannen
-3. 6-stelligen Code bestätigen → 2FA ist aktiv
+**2FA aktivieren** (aktuell via API, Profil-Seite folgt in Phase 2):
+```bash
+# Als angemeldeter Benutzer — QR-Code abrufen:
+curl -b "<session-cookie>" https://caravan.c-knox.ch/api/auth/totp/setup
+# → { qrDataUrl, secret } — QR-Code in Authenticator-App scannen
 
-Bei verlorener App: Admin kann 2FA im Admin-Panel zurücksetzen (**Zahnrad-Icon** → Benutzer → `2FA reset`).
+# 2FA mit erstem Code bestätigen und aktivieren:
+curl -X POST -H "Content-Type: application/json" \
+  -b "<session-cookie>" \
+  -d '{"code":"123456"}' https://caravan.c-knox.ch/api/auth/totp/setup
+```
+
+**2FA zurücksetzen** (bei verlorenem Gerät): Admin → Zahnrad-Icon → Benutzer → `2FA reset`.
 
 ### Admin-Panel
 
-Erreichbar über das **Zahnrad-Icon** oben rechts (nur für ADMIN-Benutzer sichtbar):
+Erreichbar über das **Zahnrad-Icon** oben rechts im Dashboard (nur für ADMIN-Benutzer sichtbar).  
+URL: `https://caravan.c-knox.ch/admin`
 
 | Tab | Inhalt |
 |-----|--------|
-| **Benutzer** | Liste aller Benutzer, Rollen ändern (USER/ADMIN), 2FA zurücksetzen, Benutzer löschen |
-| **Konfiguration** | Site-Name, Alarm-Schwellen, Session-Dauer |
+| **Benutzer** | Liste aller Benutzer, Erstellen, Rollen ändern (USER/ADMIN), 2FA zurücksetzen, Löschen |
+| **Konfiguration** | Site-Name, Alarm-Schwellen, Session-Dauer, Routen-Berechtigungen |
 | **Sicherheit** | Hinweise zu SSH, Firewall, 2FA |
+
+**Konfigurierbare Einstellungen:**
+
+| Schlüssel | Beschreibung | Standard |
+|-----------|-------------|---------|
+| `site_name` | Anzeigename der App | `Caravan Telemetrie` |
+| `mq2_alarm_ppm` | MQ2 Alarm-Schwelle in ppm | `200` |
+| `gps_publish_interval` | GPS Publish-Interval in Sekunden | `5` |
+| `session_max_age` | Session-Dauer in Stunden | `24` |
+| `routes_enabled` | Routen-Funktion ein- oder ausschalten | `true` |
+| `routes_min_role` | Mindestrolle für Routen-Zugriff | `USER` |
 
 ### Erster Admin-Benutzer
 
@@ -420,8 +443,9 @@ caravan-lab/
 │   └── camera/              # Phase 2
 │       └── docker-compose.yml
 └── scripts/
-    ├── setup.sh                 # First-time Pi setup
-    ├── deploy.sh                # Smart image-pull + restart
-    ├── caravan-deploy.service   # systemd service unit
-    └── caravan-deploy.timer     # systemd timer (every 15 min)
+    ├── setup.sh                 # First-time Pi setup (Docker, UFW, Tailscale, Timer)
+    ├── firewall.sh              # UFW Firewall einrichten / aktualisieren
+    ├── deploy.sh                # Smart image-pull + restart (nur bei Änderungen)
+    ├── caravan-deploy.service   # systemd Service Unit
+    └── caravan-deploy.timer     # systemd Timer (alle 15 min)
 ```
