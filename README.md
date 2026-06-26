@@ -224,7 +224,17 @@ echo "OEFFENTLICHER_SCHLUESSEL_NEUES_GERAET" >> ~/.ssh/authorized_keys
 
 ```bash
 ssh idefix@caravan.local
+```
+
+**Option A — direkter curl-Befehl** (Repo muss öffentlich sein):
+```bash
 curl -sSL https://raw.githubusercontent.com/schmidu-co/caravan-lab/main/scripts/setup.sh | bash
+```
+
+**Option B — via git clone** (funktioniert auch bei privatem Repo):
+```bash
+sudo git clone https://github.com/schmidu-co/caravan-lab.git /opt/caravan-lab
+bash /opt/caravan-lab/scripts/setup.sh
 ```
 
 Das Setup-Script erledigt:
