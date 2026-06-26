@@ -81,8 +81,31 @@ All payloads are JSON. `ts` is ISO 8601 UTC.
 
 ### 1. Flash Raspberry Pi OS
 
-Download **Raspberry Pi OS Bookworm Lite (64-bit)** and flash with Raspberry Pi Imager.  
-In Imager Advanced Options: enable SSH, set hostname to `caravan`, configure Wi-Fi if needed.
+Download and install **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)** (Windows / macOS / Linux).
+
+**OS auswählen:**
+
+```
+Choose OS
+  └── Raspberry Pi OS (other)
+        └── Raspberry Pi OS Lite (64-bit)   ← diese Option wählen
+```
+
+> "Lite" = kein Desktop, weniger RAM-Verbrauch — alles läuft in Docker.  
+> Die aktuelle Version ist automatisch Debian Bookworm (Debian 12). Die 64-bit-Variante ist Pflicht für den Pi 5.
+
+**Vor dem Flashen: Advanced Options öffnen** (`Ctrl+Shift+X` oder Zahnrad-Icon):
+
+| Einstellung | Wert |
+|-------------|------|
+| Hostname | `caravan` |
+| SSH aktivieren | ✓ (Passwort-Authentifizierung) |
+| Benutzername | `pi` (oder eigener Name) |
+| Passwort | sicheres Passwort setzen |
+| WLAN | nur wenn kein LAN-Kabel beim ersten Boot |
+| Locale | Zeitzone + Tastaturlayout nach Bedarf |
+
+SD-Karte / NVMe flashen, in den Pi einlegen, booten.
 
 ### 2. First boot — run setup script
 
