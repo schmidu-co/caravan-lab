@@ -109,28 +109,116 @@ SD-Karte / NVMe flashen, in den Pi einlegen, booten.
 
 ### 2. SSH-Schlüssel vorbereiten (vor dem ersten Login)
 
-Zugriff per Schlüssel statt Passwort — einmalig auf deinem lokalen Rechner:
+SSH-Schlüssel sind sicherer als Passwörter: Ein mathematisches Schlüsselpaar ersetzt das Passwort.  
+Der **private Schlüssel** bleibt auf deinem Rechner, der **öffentliche Schlüssel** wird auf den Pi kopiert.  
+Nur wer den passenden privaten Schlüssel besitzt, kann sich einloggen.
 
+#### Schritt 1 — Prüfen ob bereits ein Schlüssel vorhanden ist
+
+**macOS / Linux** (Terminal):
 ```bash
-# Schlüsselpaar generieren (falls noch keins vorhanden)
+ls ~/.ssh/id_ed25519.pub
+```
+
+**Windows** (PowerShell):
+```powershell
+Test-Path "$env:USERPROFILE\.ssh\id_ed25519.pub"
+```
+
+Wenn die Datei existiert → weiter zu Schritt 2.  
+Wenn nicht → neuen Schlüssel generieren:
+
+**macOS / Linux:**
+```bash
 ssh-keygen -t ed25519 -C "caravan-pi"
+# Speicherort: Enter (Standard ~/.ssh/id_ed25519 übernehmen)
+# Passphrase: optional — leer lassen für passwortlosen Zugriff,
+#             oder eine Passphrase setzen für zusätzlichen Schutz
+```
 
-# Öffentlichen Schlüssel auf den Pi kopieren
+**Windows** (PowerShell oder Windows Terminal):
+```powershell
+ssh-keygen -t ed25519 -C "caravan-pi"
+# Speicherort: Enter (Standard C:\Users\<Name>\.ssh\id_ed25519 übernehmen)
+# Passphrase: wie oben
+```
+
+> Es werden zwei Dateien erstellt:  
+> `id_ed25519` — **privater Schlüssel** (niemals weitergeben, niemals committen)  
+> `id_ed25519.pub` — **öffentlicher Schlüssel** (wird auf den Pi kopiert)
+
+#### Schritt 2 — Öffentlichen Schlüssel auf den Pi kopieren
+
+Der Pi muss eingeschaltet und im gleichen Netzwerk sein. Passwort-Login muss noch aktiv sein.
+
+**macOS / Linux:**
+```bash
 ssh-copy-id -i ~/.ssh/id_ed25519.pub pi@caravan.local
+# Passwort des Pi-Users eingeben (einmalig)
 ```
 
-Nach dem Kopieren testen:
-```bash
-ssh pi@caravan.local   # muss ohne Passwort funktionieren
+**Windows** (kein `ssh-copy-id` verfügbar — manuell):
+```powershell
+# Inhalt des öffentlichen Schlüssels anzeigen und kopieren:
+Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub"
+
+# Dann auf dem Pi einloggen (noch mit Passwort):
+ssh pi@caravan.local
+
+# Auf dem Pi: Schlüssel eintragen
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+echo "HIER_DEN_KOPIERTEN_SCHLUESSEL_EINFUEGEN" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+exit
 ```
 
-Dann Passwort-Login deaktivieren:
+#### Schritt 3 — Schlüssel-Login testen
+
 ```bash
+ssh pi@caravan.local
+# Muss ohne Passwort funktionieren
+```
+
+Wenn der Login klappt: ✓ weiter zu Schritt 4.  
+Wenn nicht: Schlüssel prüfen mit `ssh -v pi@caravan.local` (verbose, zeigt was schiefläuft).
+
+#### Schritt 4 — Passwort-Login deaktivieren
+
+> ⚠️ Erst ausführen wenn Schritt 3 erfolgreich war — sonst sperrt man sich aus.
+
+```bash
+# Auf dem Pi (per SSH eingeloggt):
 sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
 sudo systemctl restart sshd
 ```
 
-> **Wichtig:** Erst sicherstellen dass der Schlüssel-Login klappt, dann erst Passwort deaktivieren — sonst sperrt man sich aus.
+Verifizieren — neues Terminal öffnen und testen:
+```bash
+ssh pi@caravan.local   # muss weiterhin funktionieren (per Schlüssel)
+ssh -o PasswordAuthentication=no pi@caravan.local  # sollte klappen
+```
+
+Versuch mit Passwort — muss jetzt abgelehnt werden:
+```bash
+ssh -o PubkeyAuthentication=no pi@caravan.local
+# Erwartet: "Permission denied (publickey)"
+```
+
+#### Weiterer Zugriff via Tailscale
+
+Sobald Tailscale eingerichtet ist, lautet der SSH-Befehl von überall:
+```bash
+ssh pi@caravan          # Tailscale-Hostname (gesetzt in Imager: "caravan")
+# oder
+ssh pi@<tailscale-ip>   # IP aus dem Tailscale-Dashboard
+```
+
+Auf einem neuen Gerät Zugriff hinzufügen:
+```bash
+# Neuen öffentlichen Schlüssel auf dem Pi eintragen:
+echo "OEFFENTLICHER_SCHLUESSEL_NEUES_GERAET" >> ~/.ssh/authorized_keys
+```
 
 ### 3. First boot — run setup script
 
