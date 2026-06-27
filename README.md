@@ -265,9 +265,20 @@ cp .env.example .env
 nano .env   # fill in all required values
 ```
 
-Required variables: `TAILSCALE_AUTHKEY`, `TUNNEL_TOKEN`, `POSTGRES_PASSWORD`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `FEEDER_LAT`, `FEEDER_LON`, `FEEDER_ALT_M`.
+| Variable | Woher | Beschreibung |
+|----------|-------|-------------|
+| `GHCR_USER` | `schmidu` | GitHub-Username (Owner der Images) |
+| `GHCR_TOKEN` | [github.com → Settings → Tokens](https://github.com/settings/tokens) → Fine-grained → `read:packages` | Zugriff auf private GHCR-Images |
+| `TAILSCALE_AUTHKEY` | [login.tailscale.com → Settings → Keys](https://login.tailscale.com/admin/authkeys) | Preauthorized, einmalig |
+| `TUNNEL_TOKEN` | Cloudflare Zero Trust → Tunnels | Cloudflare Tunnel Token |
+| `POSTGRES_PASSWORD` | Beliebig, sicheres Passwort | DB-Passwort |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` | Session-Verschlüsselung |
+| `NEXTAUTH_URL` | `https://caravan.c-knox.ch` | Öffentliche URL |
+| `FEEDER_LAT / LON / ALT_M` | Koordinaten des Heimatstandorts | Fallback-Position für tar1090 |
 
 `GPS_DEVICE` defaults to `/dev/ttyUSB0`. If the G-Mouse appears as `/dev/ttyACM0`, set it here.
+
+> **GHCR_TOKEN** ist zwingend erforderlich — ohne ihn kann der Deploy-Timer keine Images von `ghcr.io/schmidu-co/*` pullen.
 
 ### 5. Start stacks (in order)
 

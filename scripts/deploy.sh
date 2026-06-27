@@ -15,6 +15,21 @@ log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" | tee -a "$LOG_FILE"
 }
 
+# Load env vars so GHCR_USER / GHCR_TOKEN are available in this shell
+# shellcheck source=/dev/null
+set -a; source "$ENV_FILE" 2>/dev/null || true; set +a
+
+# Login to GHCR before pulling — required for private images
+if [[ -n "${GHCR_TOKEN:-}" && -n "${GHCR_USER:-}" ]]; then
+  if echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin --quiet 2>&1; then
+    log "GHCR login OK ($GHCR_USER)"
+  else
+    log "WARN GHCR login failed — pulls of private images may fail"
+  fi
+else
+  log "WARN GHCR_TOKEN / GHCR_USER not set in .env — skipping login"
+fi
+
 # Returns sorted SHA256 IDs of all images declared in a compose file.
 # Used to detect whether a pull brought in new image layers.
 get_image_ids() {
